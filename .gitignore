@@ -1,0 +1,18 @@
+# .gitignore
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Distribution / packaging
+.Python
+env/
+.venv/
+build/
+dist
+
+# Logs
+*.log
+
+# Config files
+*.txt
