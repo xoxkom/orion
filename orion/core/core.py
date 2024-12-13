@@ -8,7 +8,6 @@ from graphviz import Digraph
 import numpy as np
 
 from orion.core.graph import Graph
-from orion.core.config import get_root_path
 
 __all__ = [
     "Node",
@@ -23,7 +22,7 @@ __all__ = [
     "view_graph"
 ]
 
-root_path = get_root_path()
+
 
 _default_graph = Graph()
 
@@ -182,7 +181,9 @@ class Matmul(Function):
     def forward(self, x: np.ndarray, y: np.ndarray):
         return x @ y
 
-def view_graph(node: Function, file_name: str=f"{root_path}/tmp/dot", format="png"):
+def view_graph(node: Function, save_path: str):
+    file_name = '.'.join(save_path.split('.')[: -1])
+    format = save_path.split('.')[-1]
     dot = Digraph(format=format)
     dot.attr("node", style="filled")  # 设置所有节点默认填充颜色
 
@@ -218,5 +219,5 @@ def view_graph(node: Function, file_name: str=f"{root_path}/tmp/dot", format="pn
 
     # 渲染图
     dot.render(filename=file_name, cleanup=True)
-    print(f"Graph has been saved at \"{os.path.abspath(f'{file_name}.{format}')}\"")
+    print(f"Graph has been saved at \"{os.path.abspath(f'{save_path}.{format}')}\"")
 

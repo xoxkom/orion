@@ -11,13 +11,12 @@ y = fc1.forward(input_data)
 y2 = fc2.forward(y)
 y3 = fc3.forward(y2)
 
-'''print(f"fc1 Weight: {fc1.weight}")
+print(f"fc1 Weight: {fc1.weight}")
 print(f"fc1 Bias: {fc1.bias}")
 print(f"fc1 Output: {y}")
 
 print(f"fc2 Weight: {fc2.weight}")
 print(f"fc2 Bias: {fc2.bias}")
-print(f"fc2 Output: {y2}")'''
+print(f"fc2 Output: {y2}")
 
-
-core.view_graph(y3)
+core.view_graph(y3, save_path=f"../tmp/dot.png")
