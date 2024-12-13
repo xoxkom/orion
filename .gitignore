@@ -10,6 +10,7 @@ env/
 .venv/
 build/
 tmp/
+.idea/
 dist
 
 # Logs
