@@ -9,6 +9,7 @@ __pycache__/
 env/
 .venv/
 build/
+tmp/
 dist
 
 # Logs
