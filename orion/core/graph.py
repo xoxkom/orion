@@ -76,8 +76,10 @@ class Graph(metaclass=SingletonMeta):
         dot.render(filename=file_name, cleanup=True)
         print(f"Graph has been saved at \"{os.path.abspath(f'{file_name}.{file_format}')}\"")'''
 
+    # noinspection PyUnresolvedReferences
     def view_graph(self, node: "core.Function", save_path: str):
         from orion.core import core
+        from orion.core.tensor import Tensor
 
         if not self.graph:
             raise ValueError("Cannot visualize the graph because it is empty. Add nodes to the graph first.")
@@ -104,7 +106,7 @@ class Graph(metaclass=SingletonMeta):
                 dot.node(name=cur_node.id, label=cur_node.label, fillcolor="lightgreen", shape="box")
             elif isinstance(cur_node, core.Parameter):
                 dot.node(name=cur_node.id, label=cur_node.label, fillcolor="lightblue", shape="ellipse")
-            elif isinstance(cur_node, core.Tensor):
+            elif isinstance(cur_node, Tensor):
                 dot.node(name=cur_node.id, label=cur_node.label, fillcolor="lightpink", shape="ellipse")
             else:
                 dot.node(name=cur_node.id, label=cur_node.label, fillcolor="gray", shape="ellipse")

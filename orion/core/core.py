@@ -9,7 +9,6 @@ from orion.core.graph import Graph
 __all__ = [
     "Node",
     "Function",
-    "Tensor",
     "Parameter",
     "Negative",
     "Add",
@@ -27,6 +26,7 @@ class Node(object):
     def __init__(self):
         self.next_nodes = []
         self.data = None
+        self.grad = None
         self.label = self.__class__.__name__
 
         class_name = self.__class__.__name__
@@ -37,6 +37,14 @@ class Node(object):
 
         global _default_graph
         _default_graph.append(self)
+
+    def backward(self, grad: np.ndarray = None):
+        if grad is None and self.grad is None:
+            grad = np.ones_like(self.data)  # 仅在终点节点初始化
+        self.grad = grad
+
+        if isinstance(self, Function):
+            self._backward()
 
     def __neg__(self):
         return Negative(self)
@@ -93,25 +101,8 @@ class Function(Node):
         pass
 
     @abstractmethod
-    def backward(self, *args, **kwargs):
+    def _backward(self, *args, **kwargs):
         pass
-
-
-class Tensor(Node):
-    def __init__(self, data: np.ndarray):
-        super().__init__()
-        if not isinstance(data, np.ndarray):
-            raise TypeError("Input data must be a NumPy ndarray.")
-
-        self.data = data
-
-    @property
-    def shape(self):
-        """Return the shape of the tensor."""
-        return self.data.shape
-
-    def __str__(self):
-        return f"Tensor(shape={self.shape}, data={self.data})"
 
 class Parameter(Node):
     def __init__(self,
@@ -132,7 +123,6 @@ class Parameter(Node):
 
         if label is not None:
             self.label = label
-        self._transposed = None  # Cache for transposed object
 
 class Add(Function):
     def __init__(self, x: Node, y: Node):
@@ -142,6 +132,15 @@ class Add(Function):
     def forward(self, x: np.ndarray, y: np.ndarray):
         return x + y
 
+    def _backward(self):
+        grad = self.grad
+        x, y = self.input_nodes
+        x.backward(grad)
+        if y.shape != grad.shape:
+            y.backward(np.sum(grad, axis=tuple(range(len(grad.shape) - len(y.shape)))))
+        else:
+            y.backward(grad)
+
 class Negative(Function):
     def __init__(self, x: Node):
         super().__init__(input_nodes=[x])
@@ -150,6 +149,9 @@ class Negative(Function):
     def forward(self, x: np.ndarray):
         return -1. * x
 
+    def _backward(self):
+        grad = self.grad
+        self.input_nodes[0].backward(-grad)
 
 class Minus(Function):
     def __init__(self, x: Node, y: Node):
@@ -159,6 +161,11 @@ class Minus(Function):
     def forward(self, x: np.ndarray, y: np.ndarray):
         return x - y
 
+    def _backward(self):
+        grad = self.grad
+        self.input_nodes[0].backward(grad)
+        self.input_nodes[1].backward(-grad)
+
 class Multiply(Function):
     def __init__(self, x: Node, y: Node):
         super().__init__(input_nodes=[x, y])
@@ -167,6 +174,12 @@ class Multiply(Function):
     def forward(self, x: np.ndarray, y: np.ndarray):
         return x * y
 
+    def _backward(self):
+        grad = self.grad
+        x, y = self.input_nodes
+        x.backward(grad * y.data)  # 对输入 x 传递梯度
+        y.backward(grad * x.data)  # 对输入 y 传递梯度
+
 class Matmul(Function):
     def __init__(self, x: Node, y: Node):
         super().__init__(input_nodes=[x, y])
@@ -174,3 +187,9 @@ class Matmul(Function):
 
     def forward(self, x: np.ndarray, y: np.ndarray):
         return x @ y
+
+    def _backward(self):
+        grad = self.grad
+        x, y = self.input_nodes
+        x.backward(grad @ y.data.T)
+        y.backward(x.data.T @ grad)

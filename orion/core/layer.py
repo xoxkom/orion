@@ -1,6 +1,5 @@
 from orion.core import core
 
-
 class Linear(object):
     def __init__(self,
                  in_features: int,
@@ -19,6 +18,9 @@ class Linear(object):
 
         self.in_features = in_features
         self.out_features = out_features
+
+    def parameters(self):
+        return [self.weight] + ([self.bias] if self.bias is not None else [])
 
     def forward(self, x: core.Node):
         if x.shape[1] != self.in_features:
