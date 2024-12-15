@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import os
 from abc import abstractmethod
-from queue import Queue
 
-from graphviz import Digraph
 import numpy as np
 
 from orion.core.graph import Graph
@@ -18,11 +15,8 @@ __all__ = [
     "Add",
     "Minus",
     "Multiply",
-    "Matmul",
-    "view_graph"
+    "Matmul"
 ]
-
-
 
 _default_graph = Graph()
 
@@ -180,44 +174,3 @@ class Matmul(Function):
 
     def forward(self, x: np.ndarray, y: np.ndarray):
         return x @ y
-
-def view_graph(node: Function, save_path: str):
-    file_name = '.'.join(save_path.split('.')[: -1])
-    format = save_path.split('.')[-1]
-    dot = Digraph(format=format)
-    dot.attr("node", style="filled")  # 设置所有节点默认填充颜色
-
-    if not isinstance(node, Function):
-        raise ValueError("Input node must be a Function!")
-
-    queue = Queue()
-    visit = set()
-    queue.put(node)
-    visit.add(node)
-
-    # 遍历计算图，记录节点和边
-    while not queue.empty():
-        cur_node = queue.get()
-
-        # 设置节点样式和颜色
-        if isinstance(cur_node, Function):
-            dot.node(name=cur_node.id, label=cur_node.label, fillcolor="lightgreen", shape="box")
-        elif isinstance(cur_node, Parameter):
-            dot.node(name=cur_node.id, label=cur_node.label, fillcolor="lightblue", shape="ellipse")
-        elif isinstance(cur_node, Tensor):
-            dot.node(name=cur_node.id, label=cur_node.label, fillcolor="lightpink", shape="ellipse")
-        else:
-            dot.node(name=cur_node.id, label=cur_node.label, fillcolor="gray", shape="ellipse")
-
-        # 只有 Function 类型的节点有 input_nodes
-        if isinstance(cur_node, Function):
-            for input_node in cur_node.input_nodes:
-                if input_node not in visit:
-                    visit.add(input_node)
-                    queue.put(input_node)
-                dot.edge(input_node.id, cur_node.id)  # 使用唯一ID绘制边
-
-    # 渲染图
-    dot.render(filename=file_name, cleanup=True)
-    print(f"Graph has been saved at \"{os.path.abspath(f'{save_path}.{format}')}\"")
-

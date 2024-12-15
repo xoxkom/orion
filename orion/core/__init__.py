@@ -1,4 +1,4 @@
-from .core import Tensor, Parameter, Function, view_graph
+from .core import Tensor, Parameter, Function
 from .graph import Graph
 from .layers import Linear
 

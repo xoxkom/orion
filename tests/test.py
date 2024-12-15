@@ -1,6 +1,7 @@
 import numpy as np
 
 from orion.core import core, layers
+from orion.core.graph import Graph
 
 input_data = core.Tensor(np.array([[1.0, 2.0, 3.0, 4.0]], dtype=np.float32))
 fc1 = layers.Linear(in_features=4, out_features=2, initializer="default", label="fc1")
@@ -19,4 +20,6 @@ print(f"fc2 Weight: {fc2.weight}")
 print(f"fc2 Bias: {fc2.bias}")
 print(f"fc2 Output: {y2}")
 
-core.view_graph(y3, save_path=f"../tmp/dot.png")
+g = Graph()
+
+g.view_graph(y3, f"../tmp/dot.png")
