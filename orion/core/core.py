@@ -41,7 +41,10 @@ class Node(object):
     def backward(self, grad: np.ndarray = None):
         if grad is None and self.grad is None:
             grad = np.ones_like(self.data)  # 仅在终点节点初始化
-        self.grad = grad
+        if self.grad is None:
+            self.grad = grad
+        else:
+            self.grad += grad
 
         if isinstance(self, Function):
             self._backward()
@@ -116,13 +119,26 @@ class Parameter(Node):
         elif shape is not None:
             if initializer == "default":
                 self.data = np.random.uniform(-0.1, 0.1, size=shape).astype(np.float32)
+            elif initializer == "he":  # He 初始化
+                fan_in = shape[0]  # 输入特征数量
+                std = np.sqrt(2 / fan_in)
+                self.data = np.random.randn(*shape).astype(np.float32) * std
+            elif initializer == "xavier":  # Xavier 初始化
+                fan_in, fan_out = shape[0], shape[1]
+                std = np.sqrt(2 / (fan_in + fan_out))
+                self.data = np.random.randn(*shape).astype(np.float32) * std
             else:
                 raise ValueError(f"Unsupported initializer: {initializer}")
         else:
             raise ValueError("Either `init_value` or `shape` must be provided.")
 
+        self.grad = None
+
         if label is not None:
             self.label = label
+
+    def zero_grad(self):
+        self.grad = None
 
 class Add(Function):
     def __init__(self, x: Node, y: Node):

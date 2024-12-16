@@ -1,4 +1,4 @@
-from orion.core import core
+from orion.core import act, core
 
 class Linear(object):
     def __init__(self,
@@ -30,6 +30,19 @@ class Linear(object):
         if self.bias is not None:
             y = y + self.bias
         return y
+
+    def backward(self):
+        pass
+
+class ReLU(object):
+    def __init__(self, label: str = None):
+        if label is not None:
+            self.label = label
+        else:
+            self.label = "ReLU"
+
+    def forward(self, x: core.Node):
+        return act.ReLU(x)
 
     def backward(self):
         pass

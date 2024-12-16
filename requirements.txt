@@ -1,3 +1,5 @@
 numpy~=2.2.0
 graphviz~=0.20.3
 setuptools~=75.6.0
+orion~=0.1.0
+pandas~=2.2.3
