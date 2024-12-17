@@ -8,7 +8,7 @@ import os
 from setuptools import setup, find_packages
 
 def get_project_version():
-    version_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "VERSION")
+    version_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".", "VERSION")
     with open(version_file, "r") as f:
         return f.read().strip()
 
