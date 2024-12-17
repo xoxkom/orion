@@ -44,6 +44,7 @@ Install dependencies:
 
 ```bash
 pip install -r requirements.txt
+pip install -e .
 ```
 
 Note: The computation graph visualization requires the installation of the [Graphviz](https://graphviz.org/download/) backend.

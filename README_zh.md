@@ -44,6 +44,7 @@ cd orion
 
 ```bash
 pip install -r requirements.txt
+pip install -e .
 ```
 
 **注意**：计算图可视化需要安装[Graphviz](https://graphviz.org/download/)后端.
