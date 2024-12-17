@@ -1,5 +1,15 @@
+# -*- encoding:utf-8 -*-
+# MIT License
+# Copyright (c) 2024 xoxkom
+# See the LICENSE file in the project root for more details.
+# 
+# author: xoxkom
+# version: 0.1.0
+# date: 2024.12.17
+
 from __future__ import annotations
 
+import weakref
 from abc import abstractmethod
 
 import numpy as np
@@ -9,22 +19,26 @@ from orion.core.graph import Graph
 __all__ = [
     "Node",
     "Function",
-    "Parameter",
-    "Negative",
-    "Add",
-    "Minus",
-    "Multiply",
-    "Matmul"
+    "Parameter"
 ]
 
 _default_graph = Graph()
 
+
 class Node(object):
-    """ Base for all types of node in the static calculation graph. """
+    """
+    Base class for all types of nodes in the static computation graph.
+
+    Attributes:
+        data (np.ndarray): Node's data value.
+        grad (np.ndarray): Gradient value for backpropagation.
+        label (str): Label name of the node.
+        next_nodes (weakref.WeakSet): References to subsequent nodes in the graph.
+    """
     _global_id_counter = {}
 
     def __init__(self):
-        self.next_nodes = []
+        self.next_nodes = weakref.WeakSet()
         self.data = None
         self.grad = None
         self.label = self.__class__.__name__
@@ -39,8 +53,13 @@ class Node(object):
         _default_graph.append(self)
 
     def backward(self, grad: np.ndarray = None):
+        """
+        Perform backward propagation to compute gradients.
+
+        :param grad: Gradient from the subsequent node.
+        """
         if grad is None and self.grad is None:
-            grad = np.ones_like(self.data)  # 仅在终点节点初始化
+            grad = np.ones_like(self.data)
         if self.grad is None:
             self.grad = grad
         else:
@@ -92,12 +111,22 @@ class Node(object):
             raise ValueError(f"the node {self.__class__} is empty, please run the forward method first!")
         return list(self.data)
 
+
 class Function(Node):
+    """
+    Base class for all functions in the computation graph.
+
+    Inherits from Node and represents an operation in the graph.
+
+    Attributes:
+        _input_nodes (list): Weak references to input nodes.
+    """
+
     def __init__(self, input_nodes: list[Node]):
         super().__init__()
-        self.input_nodes = input_nodes
+        self._input_nodes = [weakref.ref(node) for node in input_nodes]
         for node in input_nodes:
-            node.next_nodes.append(self)
+            node.next_nodes.add(self)
 
     @abstractmethod
     def forward(self, *args, **kwargs):
@@ -107,7 +136,23 @@ class Function(Node):
     def _backward(self, *args, **kwargs):
         pass
 
+    @property
+    def input_nodes(self):
+        """
+        Retrieve the input nodes by dereferencing weak references.
+        :return: List of input nodes.
+        """
+        return [node_ref() for node_ref in self._input_nodes if node_ref() is not None]
+
+
 class Parameter(Node):
+    """
+    Parameter node representing trainable weights.
+
+    Attributes:
+        grad (np.ndarray): Gradient associated with the parameter.
+    """
+
     def __init__(self,
                  init_value: np.ndarray | list = None,
                  shape: tuple[int, ...] = None,
@@ -119,11 +164,11 @@ class Parameter(Node):
         elif shape is not None:
             if initializer == "default":
                 self.data = np.random.uniform(-0.1, 0.1, size=shape).astype(np.float32)
-            elif initializer == "he":  # He 初始化
-                fan_in = shape[0]  # 输入特征数量
+            elif initializer == "he":
+                fan_in = shape[0]
                 std = np.sqrt(2 / fan_in)
                 self.data = np.random.randn(*shape).astype(np.float32) * std
-            elif initializer == "xavier":  # Xavier 初始化
+            elif initializer == "xavier":
                 fan_in, fan_out = shape[0], shape[1]
                 std = np.sqrt(2 / (fan_in + fan_out))
                 self.data = np.random.randn(*shape).astype(np.float32) * std
@@ -133,12 +178,13 @@ class Parameter(Node):
             raise ValueError("Either `init_value` or `shape` must be provided.")
 
         self.grad = None
-
         if label is not None:
             self.label = label
 
     def zero_grad(self):
+        """Reset the gradient to None."""
         self.grad = None
+
 
 class Add(Function):
     def __init__(self, x: Node, y: Node):
@@ -157,6 +203,7 @@ class Add(Function):
         else:
             y.backward(grad)
 
+
 class Negative(Function):
     def __init__(self, x: Node):
         super().__init__(input_nodes=[x])
@@ -169,10 +216,11 @@ class Negative(Function):
         grad = self.grad
         self.input_nodes[0].backward(-grad)
 
+
 class Minus(Function):
     def __init__(self, x: Node, y: Node):
         super().__init__(input_nodes=[x, y])
-
+        self.data = self.forward(x.data, y.data)
 
     def forward(self, x: np.ndarray, y: np.ndarray):
         return x - y
@@ -181,6 +229,7 @@ class Minus(Function):
         grad = self.grad
         self.input_nodes[0].backward(grad)
         self.input_nodes[1].backward(-grad)
+
 
 class Multiply(Function):
     def __init__(self, x: Node, y: Node):
@@ -193,8 +242,9 @@ class Multiply(Function):
     def _backward(self):
         grad = self.grad
         x, y = self.input_nodes
-        x.backward(grad * y.data)  # 对输入 x 传递梯度
-        y.backward(grad * x.data)  # 对输入 y 传递梯度
+        x.backward(grad * y.data)
+        y.backward(grad * x.data)
+
 
 class Matmul(Function):
     def __init__(self, x: Node, y: Node):
