@@ -85,7 +85,7 @@ def load_mnist_csv(train_path, test_path):
     return (X_train, y_train), (X_test, y_test)
 
 
-class SimpleModel(nn.Module):
+class Model(nn.Module):
     """
     A simple neural network model with two linear layers and a ReLU activation.
     """
@@ -128,7 +128,6 @@ def train_model(model, dataloader, optimizer, loss_fn, epochs=10):
             # Backward pass
             loss.backward()
             optimizer.step()
-            optimizer.zero_grad()
 
             # Accumulate loss
             total_loss += loss.data
@@ -137,16 +136,16 @@ def train_model(model, dataloader, optimizer, loss_fn, epochs=10):
         print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.4f}")
 
 
-def test_model(model, dataloader):
+def test_model(model, test_loader):
     """
     Evaluate the model on the test dataset.
 
     :param model: The trained neural network model.
-    :param dataloader: DataLoader for test data.
+    :param test_loader: DataLoader for test data.
     """
     correct = 0
     total = 0
-    for X_batch, y_batch in dataloader:
+    for X_batch, y_batch in test_loader:
         y_pred = model(X_batch)
         predictions = np.argmax(y_pred.data, axis=1)
         correct += np.sum(predictions == y_batch.data)
@@ -170,7 +169,7 @@ if __name__ == "__main__":
     test_loader = DataLoader((X_test, y_test), batch_size=batch_size)
 
     # Initialize the model, loss function, and optimizer
-    model = SimpleModel()
+    model = Model()
     loss_fn = CrossEntropyLoss
     optimizer = GD(model.parameters(), lr=0.5)
 

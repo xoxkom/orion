@@ -21,5 +21,5 @@ setup(
     author="xoxkom",
     author_email="c2085579991@gmail.com",
     packages=find_packages(include=["orion", "orion.*"]),
-    python_requires=">=3.9",
+    python_requires=">=3.7",
 )
